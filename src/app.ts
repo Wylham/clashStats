@@ -7,11 +7,9 @@ app.get("/", (req, res) => {
   res.send("Api Rodando Tranquilamente...");
 });
 
-app.get("/clan", (req, res) => {
-  res.json({
-    message: "Caminho para os clãs futuramente",
-    status: "ok",
-  });
+app.post("/clan", (req, res) => {
+  console.log(req.body);
+  res.json(req.body);
 });
 
 app.get("/player", (req, res) => {
