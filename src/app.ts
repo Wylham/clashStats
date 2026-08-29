@@ -13,6 +13,17 @@ app.post("/clan", (req, res) => {
   const body = req.body;
   const clanTagRegex = /^#[0289PYLQGRJCUV]{3,9}$/;
 
+  const aloowedFields = ["tag", "name"];
+  const receivedFields = Object.keys(body);
+
+  const hasUnknownFields = receivedFields.some((field) => !aloowedFields.includes(field));
+
+  if (hasUnknownFields) {
+    return res.status(400).json({
+      error: "A requisição contém campos não permitidos.",
+    });
+  }
+
   if (!body.tag) {
     return res.status(400).json({
       error: "Clã sem tag! Por favor insira a tag do clã.",
