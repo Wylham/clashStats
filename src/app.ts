@@ -13,10 +13,10 @@ app.post("/clan", (req, res) => {
   const body = req.body;
   const clanTagRegex = /^#[0289PYLQGRJCUV]{3,9}$/;
 
-  const aloowedFields = ["tag", "name"];
+  const allowedFields = ["tag", "name"];
   const receivedFields = Object.keys(body);
 
-  const hasUnknownFields = receivedFields.some((field) => !aloowedFields.includes(field));
+  const hasUnknownFields = receivedFields.some((field) => !allowedFields.includes(field));
 
   if (hasUnknownFields) {
     return res.status(400).json({
