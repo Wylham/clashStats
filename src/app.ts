@@ -1,6 +1,6 @@
 import express from "express";
 import { type Request, type Response, type NextFunction } from "express";
-import { string } from "zod";
+import { json, string } from "zod";
 
 const app = express();
 app.use(express.json());
@@ -15,8 +15,16 @@ app.post("/clan", (req, res) => {
 
   const allowedFields = ["tag", "name"];
   const receivedFields = Object.keys(body);
+  const requiredFields = ["tag", "name"];
 
   const hasUnknownFields = receivedFields.some((field) => !allowedFields.includes(field));
+  const hasMissingFields = requiredFields.some((field) => !receivedFields.includes(field));
+
+  if (hasMissingFields) {
+    return res.status(400).json({
+      error: "A requisição contém campos obrigatórios ausentes.",
+    });
+  }
 
   if (hasUnknownFields) {
     return res.status(400).json({
