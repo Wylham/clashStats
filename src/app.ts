@@ -1,6 +1,7 @@
 import express from "express";
 import { type Request, type Response, type NextFunction } from "express";
 import { json, string } from "zod";
+import "dotenv/config";
 
 const app = express();
 app.use(express.json());
@@ -9,7 +10,7 @@ app.get("/", (req, res) => {
   res.send("Api Rodando Tranquilamente...");
 });
 
-app.post("/clan", (req, res) => {
+app.post("/clan", async (req, res) => {
   const body = req.body;
   const clanTagRegex = /^#[0289PYLQGRJCUV]{3,9}$/;
 
@@ -55,8 +56,22 @@ app.post("/clan", (req, res) => {
       error: "Nome de clã inválido.",
     });
   }
-  console.log(body);
-  res.json(body);
+
+  const response = await fetch(`${process.env.CLASH_API_BASE_URL}clans/${encodeURIComponent(body.tag)}`, {
+    headers: {
+      Authorization: `Bearer ${process.env.CLASH_API_TOKEN}`,
+    },
+  });
+
+  if (!response.ok) {
+    return res.status(response.status).json({
+      error: "Não foi possível consultar o clã na API do Clash of Clans.",
+    });
+  }
+
+  const clan = await response.json();
+
+  res.json(clan);
 });
 
 app.get("/player", (req, res) => {
