@@ -1,7 +1,6 @@
 import express from "express";
-import { type Request, type Response, type NextFunction } from "express";
-import { json, string } from "zod";
 import "dotenv/config";
+import { getClan } from "./services/clanService";
 
 const app = express();
 app.use(express.json());
@@ -57,21 +56,15 @@ app.post("/clan", async (req, res) => {
     });
   }
 
-  const response = await fetch(`${process.env.CLASH_API_BASE_URL}clans/${encodeURIComponent(body.tag)}`, {
-    headers: {
-      Authorization: `Bearer ${process.env.CLASH_API_TOKEN}`,
-    },
-  });
+  try {
+    const clan = await getClan(body.tag);
 
-  if (!response.ok) {
-    return res.status(response.status).json({
-      error: "Não foi possível consultar o clã na API do Clash of Clans.",
+    res.json(clan);
+  } catch (error) {
+    return res.status(500).json({
+      error: "Erro ao consultar a API do Clash of Clans.",
     });
   }
-
-  const clan = await response.json();
-
-  res.json(clan);
 });
 
 app.get("/player", (req, res) => {
