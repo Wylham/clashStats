@@ -1,6 +1,6 @@
 import express from "express";
 import "dotenv/config";
-import { getClan } from "./services/clanService";
+import { getClan, saveClan } from "./services/clanService";
 
 const app = express();
 app.use(express.json());
@@ -58,9 +58,12 @@ app.post("/clan", async (req, res) => {
 
   try {
     const clan = await getClan(body.tag);
+    const savedClan = await saveClan(clan);
 
+    res.json(savedClan);
     res.json(clan);
   } catch (error) {
+    console.error(error);
     return res.status(500).json({
       error: "Erro ao consultar a API do Clash of Clans.",
     });
