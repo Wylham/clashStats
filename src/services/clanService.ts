@@ -90,3 +90,11 @@ export async function saveClan(clan: any) {
     },
   });
 }
+
+export async function getClanByTag(tag: string) {
+  return await prisma.clan.findUnique({
+    where: {
+      tag,
+    },
+  });
+}
