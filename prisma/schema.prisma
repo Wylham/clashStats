@@ -17,8 +17,8 @@ model Clan {
   clanLevel Int
   warWinStreak Int
   warWins Int
-  warTies Int
-  warLosses Int
+  warTies Int?
+  warLosses Int?
   clanPoints Int
   clanBuilderBasePoints Int
   clanCapitalPoints Int

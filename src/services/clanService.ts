@@ -1,4 +1,3 @@
-import express from "express";
 import { prisma } from "../lib/prisma";
 import { ClanType, WarFrequency } from "../generated/prisma/client";
 
@@ -14,12 +13,33 @@ export async function getClan(tag: string) {
   }
 
   const clan = await response.json();
-  console.log(clan);
 
   return clan;
 }
 
+const clanTypeMap: Record<string, ClanType> = {
+  open: ClanType.OPEN,
+  inviteOnly: ClanType.INVITE_ONLY,
+  closed: ClanType.CLOSED,
+};
+
+const warFrequencyMap: Record<string, WarFrequency> = {
+  unknown: WarFrequency.UNKNOWN,
+  always: WarFrequency.ALWAYS,
+  moreThanOncePerWeek: WarFrequency.MORE_THAN_ONCE_PER_WEEK,
+  oncePerWeek: WarFrequency.ONCE_PER_WEEK,
+  lessThanOncePerWeek: WarFrequency.LESS_THAN_ONCE_PER_WEEK,
+  never: WarFrequency.NEVER,
+  any: WarFrequency.ANY,
+};
+
 export async function saveClan(clan: any) {
+  const warFrequency = warFrequencyMap[clan.warFrequency];
+  const clanType = clanTypeMap[clan.type];
+
+  if (!warFrequency || !clanType) {
+    throw new Error("Valor de enum inválido recebido da API do Clash of Clans.");
+  }
   return await prisma.clan.create({
     data: {
       tag: clan.tag,
@@ -28,12 +48,12 @@ export async function saveClan(clan: any) {
 
       requiredTownhallLevel: clan.requiredTownhallLevel,
 
-      warFrequency: WarFrequency.ALWAYS,
+      warFrequency,
       clanLevel: clan.clanLevel,
       warWinStreak: clan.warWinStreak,
       warWins: clan.warWins,
-      warTies: clan.warTies,
-      warLosses: clan.warLosses,
+      warTies: clan.warTies ?? null,
+      warLosses: clan.warLosses ?? null,
 
       clanPoints: clan.clanPoints,
       clanBuilderBasePoints: clan.clanBuilderBasePoints,
@@ -46,7 +66,7 @@ export async function saveClan(clan: any) {
 
       isWarLogPublic: clan.isWarLogPublic,
 
-      type: ClanType.INVITE_ONLY,
+      type: clanType,
 
       members: clan.members,
 
