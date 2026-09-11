@@ -1,9 +1,12 @@
 import express from "express";
 import "dotenv/config";
-import { getClan, saveClan } from "./services/clanService";
+import { getClan } from "./services/clanService";
+import clanRoutes from "./routes/clanRoutes";
 
 const app = express();
+
 app.use(express.json());
+app.use(clanRoutes);
 
 app.get("/", (req, res) => {
   res.send("Api Rodando Tranquilamente...");
@@ -58,9 +61,7 @@ app.post("/clan", async (req, res) => {
 
   try {
     const clan = await getClan(body.tag);
-    const savedClan = await saveClan(clan);
 
-    res.json(savedClan);
     res.json(clan);
   } catch (error) {
     console.error(error);
