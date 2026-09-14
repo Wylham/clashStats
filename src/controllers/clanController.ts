@@ -78,7 +78,7 @@ export async function createClanController(req: Request, res: Response) {
     console.error(error);
 
     return res.status(500).json({
-      error: "Erro ao consultar a API do Clash of Clans.",
+      error: "Não foi possível processar o clã.",
     });
   }
 }
