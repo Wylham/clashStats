@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import { getClan, saveClan, getClanByTag } from "../services/clanService";
+import { getClan, saveClan } from "../services/clanService";
 
 export async function getClanController(req: Request, res: Response) {
   const { tag } = req.params;
@@ -10,15 +10,18 @@ export async function getClanController(req: Request, res: Response) {
     });
   }
 
-  const clan = await getClanByTag(tag);
+  try {
+    const clan = await getClan(tag);
+    const savedClan = await saveClan(clan);
 
-  if (!clan) {
-    return res.status(404).json({
-      error: "Clã não encontrado.",
+    return res.status(200).json(savedClan);
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      error: "Não foi possível consultar o clã.",
     });
   }
-
-  return res.status(200).json(clan);
 }
 
 export async function createClanController(req: Request, res: Response) {
