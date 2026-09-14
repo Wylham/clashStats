@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Clan" ALTER COLUMN "warTies" DROP NOT NULL,
+ALTER COLUMN "warLosses" DROP NOT NULL;
