@@ -12,9 +12,8 @@ export async function getClanController(req: Request, res: Response) {
 
   try {
     const clan = await getClan(tag);
-    const savedClan = await saveClan(clan);
 
-    return res.status(200).json(savedClan);
+    return res.status(200).json(clan);
   } catch (error) {
     console.error(error);
 

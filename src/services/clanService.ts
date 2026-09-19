@@ -1,7 +1,49 @@
 import { prisma } from "../lib/prisma";
 import { ClanType, WarFrequency } from "../generated/prisma/client";
+import { getCachedJson, getClanCacheKey, setCachedJson } from "../lib/redis.js";
 
-export async function getClan(tag: string) {
+export type ClashClan = {
+  tag: string;
+  name: string;
+  description?: string;
+  requiredTownhallLevel: number;
+  warFrequency: string;
+  clanLevel: number;
+  warWinStreak: number;
+  warWins: number;
+  warTies?: number;
+  warLosses?: number;
+  clanPoints: number;
+  clanBuilderBasePoints: number;
+  clanCapitalPoints: number;
+  isFamilyFriendly: boolean;
+  requiredTrophies: number;
+  requiredBuilderBaseTrophies: number;
+  isWarLogPublic: boolean;
+  type: string;
+  members: number;
+  warLeague?: { id: number; name: string };
+  capitalLeague?: { id: number; name: string };
+  chatLanguage?: { id: number; name: string };
+  location?: {
+    id: number;
+    name: string;
+    isCountry: boolean;
+    countryCode?: string;
+  };
+  badgeUrls?: { small: string; medium: string; large: string };
+};
+
+export async function getClan(tag: string): Promise<ClashClan> {
+  const cacheKey = getClanCacheKey(tag);
+  const cachedClan = await getCachedJson<ClashClan>(cacheKey);
+
+  if (cachedClan) {
+    console.log("CACHE HIT", cacheKey);
+    return cachedClan;
+  }
+
+  console.log("CACHE MISS", cacheKey);
   const response = await fetch(`${process.env.CLASH_API_BASE_URL}clans/${encodeURIComponent(tag)}`, {
     headers: {
       Authorization: `Bearer ${process.env.CLASH_API_TOKEN}`,
@@ -12,7 +54,9 @@ export async function getClan(tag: string) {
     throw new Error("Não foi possível consultar o clã na API do Clash of Clans.");
   }
 
-  const clan = await response.json();
+  const clan = (await response.json()) as ClashClan;
+
+  await setCachedJson(cacheKey, clan);
 
   return clan;
 }
@@ -33,7 +77,7 @@ const warFrequencyMap: Record<string, WarFrequency> = {
   any: WarFrequency.ANY,
 };
 
-export async function saveClan(clan: any) {
+export async function saveClan(clan: ClashClan) {
   const warFrequency = warFrequencyMap[clan.warFrequency];
   const clanType = clanTypeMap[clan.type];
 
@@ -44,7 +88,7 @@ export async function saveClan(clan: any) {
   const data = {
     tag: clan.tag,
     name: clan.name,
-    description: clan.description,
+    description: clan.description ?? null,
 
     requiredTownhallLevel: clan.requiredTownhallLevel,
 
@@ -70,23 +114,23 @@ export async function saveClan(clan: any) {
 
     members: clan.members,
 
-    warLeagueId: clan.warLeague?.id,
-    warLeagueName: clan.warLeague?.name,
+    warLeagueId: clan.warLeague?.id ?? null,
+    warLeagueName: clan.warLeague?.name ?? null,
 
-    capitalLeagueId: clan.capitalLeague?.id,
-    capitalLeagueName: clan.capitalLeague?.name,
+    capitalLeagueId: clan.capitalLeague?.id ?? null,
+    capitalLeagueName: clan.capitalLeague?.name ?? null,
 
-    chatLanguageId: clan.chatLanguage?.id,
-    chatLanguageName: clan.chatLanguage?.name,
+    chatLanguageId: clan.chatLanguage?.id ?? null,
+    chatLanguageName: clan.chatLanguage?.name ?? null,
 
-    locationId: clan.location?.id,
-    locationName: clan.location?.name,
-    locationIsCountry: clan.location?.isCountry,
-    locationCountryCode: clan.location?.countryCode,
+    locationId: clan.location?.id ?? null,
+    locationName: clan.location?.name ?? null,
+    locationIsCountry: clan.location?.isCountry ?? null,
+    locationCountryCode: clan.location?.countryCode ?? null,
 
-    badgeSmallUrl: clan.badgeUrls?.small,
-    badgeMediumUrl: clan.badgeUrls?.medium,
-    badgeLargeUrl: clan.badgeUrls?.large,
+    badgeSmallUrl: clan.badgeUrls?.small ?? null,
+    badgeMediumUrl: clan.badgeUrls?.medium ?? null,
+    badgeLargeUrl: clan.badgeUrls?.large ?? null,
   };
 
   return await prisma.clan.upsert({
