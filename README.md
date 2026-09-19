@@ -31,6 +31,6 @@ REDIS_URL=redis://localhost:6379
 CLAN_CACHE_TTL=300
 ```
 
-`GET /clan/:tag` consulta primeiro o Redis usando a chave `clan:{tag}`. Em caso de cache miss, consulta a API do Clash, grava a resposta pelo TTL configurado e retorna os dados. Se o Redis estiver indisponível, a consulta à API continua normalmente sem cache.
+`GET /clan/:tag` consulta primeiro o Redis usando a chave `clan:{tag}`. Em caso de cache miss, consulta `/clans/{tag}`, grava a resposta pelo TTL configurado e retorna os dados do clã. `GET /clan/:tag/members` usa a chave independente `clan:{tag}:members` e consulta `/clans/{tag}/members`. Se o Redis estiver indisponível, ambas as consultas continuam normalmente sem cache.
 
 O `POST /clan` permanece responsável pelo fluxo existente de persistência via Prisma.

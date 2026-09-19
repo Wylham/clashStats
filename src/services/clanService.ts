@@ -1,6 +1,7 @@
 import { prisma } from "../lib/prisma";
 import { ClanType, WarFrequency } from "../generated/prisma/client";
-import { getCachedJson, getClanCacheKey, setCachedJson } from "../lib/redis.js";
+import { getCachedJson, getClanCacheKey, getClanMembersCacheKey, setCachedJson } from "../lib/redis.js";
+import { normalizeClanTag } from "../lib/clanTag";
 
 export type ClashClan = {
   tag: string;
@@ -34,8 +35,48 @@ export type ClashClan = {
   badgeUrls?: { small: string; medium: string; large: string };
 };
 
+export type ClashClanMember = {
+  tag: string;
+  name: string;
+  role: string;
+  expLevel: number;
+  trophies: number;
+  clanRank: number;
+  previousClanRank: number;
+  donations: number;
+  donationsReceived: number;
+  clanChestPoints?: number;
+};
+
+export type ClashClanMembersResponse = {
+  items: ClashClanMember[];
+};
+
+async function fetchClash<T>(path: string): Promise<T> {
+  let response: Response;
+
+  try {
+    response = await fetch(`${process.env.CLASH_API_BASE_URL}${path}`, {
+      headers: {
+        Authorization: `Bearer ${process.env.CLASH_API_TOKEN}`,
+      },
+    });
+  } catch (error) {
+    console.error("CLASH API ERROR: não foi possível alcançar a API do Clash.", error);
+    throw error;
+  }
+
+  if (!response.ok) {
+    console.error(`CLASH API ERROR: resposta HTTP ${response.status}.`);
+    throw new Error("Não foi possível consultar a API do Clash of Clans.");
+  }
+
+  return (await response.json()) as T;
+}
+
 export async function getClan(tag: string): Promise<ClashClan> {
-  const cacheKey = getClanCacheKey(tag);
+  const normalizedTag = normalizeClanTag(tag);
+  const cacheKey = getClanCacheKey(normalizedTag);
   const cachedClan = await getCachedJson<ClashClan>(cacheKey);
 
   if (cachedClan) {
@@ -44,21 +85,29 @@ export async function getClan(tag: string): Promise<ClashClan> {
   }
 
   console.log("CACHE MISS", cacheKey);
-  const response = await fetch(`${process.env.CLASH_API_BASE_URL}clans/${encodeURIComponent(tag)}`, {
-    headers: {
-      Authorization: `Bearer ${process.env.CLASH_API_TOKEN}`,
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error("Não foi possível consultar o clã na API do Clash of Clans.");
-  }
-
-  const clan = (await response.json()) as ClashClan;
+  const clan = await fetchClash<ClashClan>(`clans/${encodeURIComponent(normalizedTag)}`);
 
   await setCachedJson(cacheKey, clan);
 
   return clan;
+}
+
+export async function getClanMembers(tag: string): Promise<ClashClanMembersResponse> {
+  const normalizedTag = normalizeClanTag(tag);
+  const cacheKey = getClanMembersCacheKey(normalizedTag);
+  const cachedMembers = await getCachedJson<ClashClanMembersResponse>(cacheKey);
+
+  if (cachedMembers) {
+    console.log("CACHE HIT", cacheKey);
+    return cachedMembers;
+  }
+
+  console.log("CACHE MISS", cacheKey);
+  const members = await fetchClash<ClashClanMembersResponse>(`clans/${encodeURIComponent(normalizedTag)}/members`);
+
+  await setCachedJson(cacheKey, members);
+
+  return members;
 }
 
 const clanTypeMap: Record<string, ClanType> = {

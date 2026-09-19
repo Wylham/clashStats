@@ -1,14 +1,31 @@
 import type { Request, Response } from "express";
-import { getClan, saveClan } from "../services/clanService";
+import { getClan, getClanMembers, saveClan } from "../services/clanService";
+import { isValidClanTag } from "../lib/clanTag";
 
-export async function getClanController(req: Request, res: Response) {
+function getTagFromParams(req: Request, res: Response) {
   const { tag } = req.params;
 
   if (!tag || Array.isArray(tag)) {
-    return res.status(400).json({
+    res.status(400).json({
       error: "A tag do clã é obrigatória.",
     });
+    return null;
   }
+
+  if (!isValidClanTag(tag)) {
+    res.status(400).json({
+      error: "Tag inválida! Por favor insira uma tag válida.",
+    });
+    return null;
+  }
+
+  return tag;
+}
+
+export async function getClanController(req: Request, res: Response) {
+  const tag = getTagFromParams(req, res);
+
+  if (!tag) return;
 
   try {
     const clan = await getClan(tag);
@@ -23,10 +40,26 @@ export async function getClanController(req: Request, res: Response) {
   }
 }
 
+export async function getClanMembersController(req: Request, res: Response) {
+  const tag = getTagFromParams(req, res);
+
+  if (!tag) return;
+
+  try {
+    const members = await getClanMembers(tag);
+
+    return res.status(200).json(members);
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      error: "Não foi possível consultar os membros do clã.",
+    });
+  }
+}
+
 export async function createClanController(req: Request, res: Response) {
   const body = req.body;
-  const clanTagRegex = /^#[0289PYLQGRJCUV]{3,9}$/;
-
   const allowedFields = ["tag", "name"];
   const receivedFields = Object.keys(body);
   const requiredFields = ["tag", "name"];
@@ -53,7 +86,7 @@ export async function createClanController(req: Request, res: Response) {
     });
   }
 
-  if (typeof body.tag !== "string" || !clanTagRegex.test(body.tag)) {
+  if (typeof body.tag !== "string" || !isValidClanTag(body.tag)) {
     return res.status(400).json({
       error: "Tag inválida! Por favor insira uma tag válida.",
     });

@@ -35,8 +35,9 @@ async function ensureRedisConnection() {
   connectPromise ??= redis
     .connect()
     .then(() => true)
-    .catch(() => {
+    .catch((error) => {
       connectPromise = null;
+      console.warn("CACHE ERROR: Redis indisponível.", error);
       return false;
     });
 
@@ -44,9 +45,13 @@ async function ensureRedisConnection() {
 }
 
 export function getClanCacheKey(tag: string) {
-  const normalizedTag = tag.trim().toUpperCase().replace(/^#/, "");
+  const normalizedTag = tag.trim().toUpperCase();
 
   return `clan:${normalizedTag}`;
+}
+
+export function getClanMembersCacheKey(tag: string) {
+  return `${getClanCacheKey(tag)}:members`;
 }
 
 export async function getCachedJson<T>(key: string): Promise<T | null> {
